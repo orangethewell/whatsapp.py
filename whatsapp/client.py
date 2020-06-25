@@ -20,7 +20,7 @@ class Client():
         self.qrcode_class = "_2nIZM"
         self.input_class = '_3uMse'
 
-    def start_client(self, perma_connection = False):
+    def start(self, perma_connection = False):
         """Will open the Whatsapp Web page on Selenium."""
         self.driver.get("https://web.whatsapp.com/")
         # Desativa a conexão permanente caso o usário esteja testando o bot, para deixar
@@ -60,6 +60,7 @@ class Client():
                 ultimo_nome = len(nomes) - 1
                 nome = nomes[ultimo_nome].get_attribute("aria-label")
                 sticker = Sticker(mensagem)
+                time.sleep(2)
                 sticker.get_sticker(1)
                 return nome, mensagem
                 
@@ -75,14 +76,14 @@ class Client():
         input_box = self.driver.find_element_by_class_name(self.input_class)
         time.sleep(1)
         input_box.click()
-        raw_mensagem = mensagem.replace(" ", " _ ")
-        raw_mensagem = raw_mensagem.replace("\n", " // ")
+        raw_menssage = message.replace(" ", " _ ")
+        raw_menssage = raw_menssage.replace("\n", " // ")
 
         # Formata a mensagem para que quando enviada, ela não envie comandos como ENTER
         # para enviar a mensagem direto e não quebrar a linha, que talvez era o que precisava.
         # Será alterado para um sistema de copiar e colar futuramente.
 
-        for palavra in raw_mensagem.split(" "):
+        for palavra in raw_menssage.split(" "):
             if palavra == "//":
                 input_box.send_keys(Keys.SHIFT + Keys.ENTER)
             elif palavra == "_":
@@ -93,4 +94,12 @@ class Client():
         time.sleep(0.05)
         button.click()
 
-    async def wait_for_message(self):
+    async def wait_for_message(self, message):
+        found = False
+        while found == False:
+            await asyncio.sleep(0.05)
+            message_test = self.listen()[1]
+            if message_test == message:
+                def decorator(fun):
+                    return fun()
+                return decorator
