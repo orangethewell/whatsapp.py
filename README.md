@@ -16,6 +16,7 @@ Os comandos são:
 * `Classe Client` : Você precisa criar um objeto com a classe Client, esse objeto poderá usar os comandos a seguir.
     
     * `Client.start_client(perma_connection = False)` : É o comando para iniciar a conexão com o **webdriver**, é executado para abrir o Whatsapp Web e esperar até que você conecte uma conta válida do whatsapp escaneando o QR Code.
+        * Atributo `perma_connection = True/False`: É usado para ativar ou desativar a conexão permanente do Whatsapp com o Whatsapp Web. Caso desativado, após um tempo ocioso, o Whatsapp Web será desativado do Whatsapp.
     
     * `Client.select_contact(contact)`: Seleciona um contato para mandar e receber mensagens. O parâmetro `contact` recebe o **nome exibido no contato** (ou seja, não é possível pegar um contato por número se ele já estiver registrado na lista de contatos).
    
