@@ -19,9 +19,12 @@ Os comandos são:
             <br>
         * `perma_connection` : Usado para caso você queira manter o seu whatsapp sempre aberto no webdriver, ativando ou desativando a conexão permanente, recebe os valores `True` e `False`. 
     <br>
-    * `Client.select_contact(contact)`: Seleciona um contato para mandar e receber mensagens. O parâmetro `contact` recebe o **nome exibido no contato** (ou seja, não é possível pegar um contato por número se ele já estiver registrado na lista de contatos). (OBS: Esse comando irá mudar futuramente)
+    * `Client.select_contact(contact)`: Seleciona um contato para mandar e receber mensagens. O parâmetro `contact` recebe o **nome exibido no contato** (ou seja, não é possível pegar um contato por número se ele já estiver registrado na lista de contatos).
     <br>
     * `Client.send_message(message)`: Envia uma mensagem para o contato selecionado.
+    <br>
+    * `Client.listen()`: Retorna a última mensagem para o contato selecionado. Recomendado criar um loop com `if` e `else` para programar comandos.
+    (OBS: Esse comando irá mudar futuramente)
 ---
 ## Futuros objetivos
 
