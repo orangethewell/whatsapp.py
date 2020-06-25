@@ -7,8 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from selenium.common.exceptions import NoSuchElementException
 
-from .sticker import Sticker
-from .events import on_ready
+from sticker import Sticker
 
 class Client():
     def __init__(self):
@@ -55,7 +54,7 @@ class Client():
                 ultimo_sticker = len(stickers) - 1
                 mensagem = stickers[ultimo_sticker].get_attribute("src")
             except:
-                raise Exception("Deu errado")
+                raise Exception("Non-regonizable object.")
             else:
                 nomes = stickers[ultimo_sticker].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
                 ultimo_nome = len(nomes) - 1
@@ -71,7 +70,7 @@ class Client():
             nome = nomes[ultimo_nome].get_attribute("aria-label")
             return nome, mensagem
 
-    def send_message(self, mensagem):
+    def send_message(self, message):
         """Usa as teclas para enviar uma mensagem. (OBS.: A mensagem é enviada inteira.)"""
         input_box = self.driver.find_element_by_class_name(self.input_class)
         time.sleep(1)
@@ -93,3 +92,5 @@ class Client():
         button = self.driver.find_element_by_xpath("//span[@data-icon='send']")
         time.sleep(0.05)
         button.click()
+
+    async def wait_for_message(self):

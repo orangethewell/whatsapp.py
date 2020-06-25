@@ -4,7 +4,6 @@ bot = whatsapp.Client()
 
 bot.start_client()
 
-@whatsapp.on_ready
 def on_start():
     print("iniciado!")
 
