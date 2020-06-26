@@ -28,8 +28,8 @@ Os comandos são:
 ---
 ## Futuros objetivos
 
-- [ ] Copiar e colar mensagem no Input;
-- [x] Código assíncrono; **(Fase de Testes)**
+- [x] Copiar e colar mensagem no Input; **(Essa instrução é interna, sem necessidade de instruções)**
+- [x] Código assíncrono; **(Pronto! Instruções serão atualizadas antes do merge)**
 - [ ] Sistema de fila de tarefas;
 - [ ] Objetos para cada tipo de mensagem;
 - [ ] Código no **PyPI**
