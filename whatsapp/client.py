@@ -7,7 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 from selenium.common.exceptions import NoSuchElementException
 
-from sticker import Sticker
+from .sticker import Sticker
 
 class Client():
     def __init__(self):
@@ -20,11 +20,11 @@ class Client():
         self.qrcode_class = "_2nIZM"
         self.input_class = '_3uMse'
 
-    def start(self, perma_connection = False):
-        """Will open the Whatsapp Web page on Selenium."""
+        self.func_dict = {}
+
+    def run(self, perma_connection = False, prefix = "."):
+        """Will open the Whatsapp Web page on Selenium and run the main loop."""
         self.driver.get("https://web.whatsapp.com/")
-        # Desativa a conexão permanente caso o usário esteja testando o bot, para deixar
-        # permanente, basta alterar o parâmetro perma_connection = True
         if perma_connection == False:
             self.driver.find_element_by_xpath("//input[@name='rememberMe']").click()
         while True:
@@ -32,49 +32,59 @@ class Client():
                 self.driver.find_element_by_class_name(self.qrcode_class)
             except:
                 break
+        time.sleep(2)
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.listener())
+        loop.run_forever()
 
     def select_contact(self, contact):
-        contact = self.driver.find_element_by_xpath("//span[@title='"+ contact +"'")
-        contact.click()
+        self.contact = contact
 
-    async def listen(self):
+    async def listener(self):
         """Retorna o valor da última mensagem enviada no bate-papo."""
-        try:
-            chat = self.driver.find_elements_by_class_name(self.chat_class)
-            ultimo_chat = len(chat) - 1
-            mensagem = chat[ultimo_chat].find_element_by_css_selector('span.selectable-text').text
-            
-            # Procura por textos na última mensagem enviada no chat, caso não encontre, o código
-            # parte para a excessão que tenta achar um link, caso a última mensagem seja uma
-            # imagem.
-
-        except NoSuchElementException:
+        while True:
+            self.driver.find_element_by_xpath("//span[@title='"+ self.contact +"']").click()
+            await asyncio.sleep(0.1)
             try:
-                stickers = self.driver.find_elements_by_class_name(self.sticker_class)
-                ultimo_sticker = len(stickers) - 1
-                mensagem = stickers[ultimo_sticker].get_attribute("src")
-            except:
-                raise Exception("Non-regonizable object.")
-            else:
-                nomes = stickers[ultimo_sticker].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
-                ultimo_nome = len(nomes) - 1
-                nome = nomes[ultimo_nome].get_attribute("aria-label")
-                sticker = Sticker(mensagem)
-                time.sleep(2)
-                sticker.get_sticker(1)
-                return nome, mensagem
-                
-                # por fim, retorna os valores encontrados, no caso mensagem e nome do usuário.
-        else:
-            nomes = chat[ultimo_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
-            ultimo_nome = len(nomes) - 1
-            nome = nomes[ultimo_nome].get_attribute("aria-label")
-            return nome, mensagem
+                chat = self.driver.find_elements_by_class_name(self.chat_class)
+                ultimo_chat = len(chat) - 1
+                self.mensagem = chat[ultimo_chat].find_element_by_css_selector('span.selectable-text').text
 
-    def send_message(self, message):
+            except NoSuchElementException:
+                try:
+                    stickers = self.driver.find_elements_by_class_name(self.sticker_class)
+                    ultimo_sticker = len(stickers) - 1
+                    self.mensagem = stickers[ultimo_sticker].get_attribute("src")
+                except:
+                    raise Exception("Non-regonizable object.")
+                else:
+                    nomes = stickers[ultimo_sticker].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
+                    ultimo_nome = len(nomes) - 1
+                    self.name = nomes[ultimo_nome].get_attribute("aria-label")
+                    sticker = Sticker(self.mensagem)
+                    await asyncio.sleep(2)
+                    sticker.get_sticker(1)
+                    print(self.get_message_author + ":", self.get_message)
+
+            else:
+                nomes = chat[ultimo_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
+                ultimo_nome = len(nomes) - 1
+                self.name = nomes[ultimo_nome].get_attribute("aria-label")
+                print(self.get_message_author() + ":", self.get_message())
+                try:
+                    fd = self.func_dict
+                except KeyError:
+                    continue
+                else:
+                    for key in fd:
+                        if key == str(self.mensagem):
+                            function = fd[key]
+                            await function()
+
+    async def send_message(self, message):
         """Usa as teclas para enviar uma mensagem. (OBS.: A mensagem é enviada inteira.)"""
         input_box = self.driver.find_element_by_class_name(self.input_class)
-        time.sleep(1)
+        await asyncio.sleep(1)
         input_box.click()
         raw_menssage = message.replace(" ", " _ ")
         raw_menssage = raw_menssage.replace("\n", " // ")
@@ -84,6 +94,7 @@ class Client():
         # Será alterado para um sistema de copiar e colar futuramente.
 
         for palavra in raw_menssage.split(" "):
+            await asyncio.sleep(0.01)
             if palavra == "//":
                 input_box.send_keys(Keys.SHIFT + Keys.ENTER)
             elif palavra == "_":
@@ -94,12 +105,15 @@ class Client():
         time.sleep(0.05)
         button.click()
 
-    async def wait_for_message(self, message):
-        found = False
-        while found == False:
-            await asyncio.sleep(0.05)
-            message_test = self.listen()[1]
-            if message_test == message:
-                def decorator(fun):
-                    return fun()
-                return decorator
+    def wait_for_message(self, message): # Decorador para comandos
+        def decorator(f):
+            self.func_dict[message] = f
+            print(self.func_dict)
+            return f
+        return decorator
+
+    def get_message_author(self): # Retorna o nome do autor da última mensagem
+        return str(self.name).replace(":", "")
+
+    def get_message(self): # Retorna a última mensagem
+        return str(self.mensagem)

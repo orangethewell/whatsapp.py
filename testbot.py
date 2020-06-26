@@ -1,11 +1,12 @@
 import whatsapp
+import asyncio
 
 bot = whatsapp.Client()
+bot.select_contact("My friend")
 
-bot.start()
+@bot.wait_for_message("?poema")
+async def func():
+    poem = open("poem.txt", 'r').read()
+    await bot.send_message(poem)
 
-bot.select_contact("my friend")
-
-@bot.wait_for_message("!foo")
-async def print_foo():
-    bot.send_message("foo")
+bot.run()
