@@ -29,7 +29,7 @@ Os comandos são:
 ## Futuros objetivos
 
 - [ ] Copiar e colar mensagem no Input;
-- [ ] Código assíncrono;
+- [x] Código assíncrono; **Logo estará disponível.**
 - [ ] Sistema de fila de tarefas;
 - [ ] Objetos para cada tipo de mensagem;
 - [ ] Código no **PyPI**
