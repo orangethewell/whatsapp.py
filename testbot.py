@@ -1,12 +1,13 @@
-import whatsapp
+import whatsapp 
+import asyncio
 
 bot = whatsapp.Client()
+bot.select_contact("Teste Bot")
 
-bot.start_client()
+@bot.event("on_message")
+async def func():
+    if bot.get_message() == "?teste":
+        message = "This is a test!"
+        await bot.send_message(message)
 
-@whatsapp.on_ready
-def on_start():
-    print("iniciado!")
-
-bot.select_contact("Karina")
-bot.wait_for_message()
+bot.run()

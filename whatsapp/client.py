@@ -1,5 +1,6 @@
 import time
 import asyncio
+import pyperclip
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -8,7 +9,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import NoSuchElementException
 
 from .sticker import Sticker
-from .events import on_ready
 
 class Client():
     def __init__(self):
@@ -21,11 +21,12 @@ class Client():
         self.qrcode_class = "_2nIZM"
         self.input_class = '_3uMse'
 
-    def start_client(self, perma_connection = False):
-        """Will open the Whatsapp Web page on Selenium."""
+        self._listeners = {}
+        self._listeners["on_message"] = []
+
+    def run(self, perma_connection = False):
+        """Will open the Whatsapp Web page on Selenium and run the main loop."""
         self.driver.get("https://web.whatsapp.com/")
-        # Desativa a conexão permanente caso o usário esteja testando o bot, para deixar
-        # permanente, basta alterar o parâmetro perma_connection = True
         if perma_connection == False:
             self.driver.find_element_by_xpath("//input[@name='rememberMe']").click()
         while True:
@@ -33,63 +34,89 @@ class Client():
                 self.driver.find_element_by_class_name(self.qrcode_class)
             except:
                 break
+        time.sleep(2)
+        self.event_loop = asyncio.get_event_loop()
+        self.event_loop.run_until_complete(self.listener())
 
     def select_contact(self, contact):
-        contact = self.driver.find_element_by_xpath("//span[@title='"+ contact +"'")
-        contact.click()
+        self.contact = contact
 
-    async def listen(self):
-        """Retorna o valor da última mensagem enviada no bate-papo."""
-        try:
-            chat = self.driver.find_elements_by_class_name(self.chat_class)
-            ultimo_chat = len(chat) - 1
-            mensagem = chat[ultimo_chat].find_element_by_css_selector('span.selectable-text').text
-            
-            # Procura por textos na última mensagem enviada no chat, caso não encontre, o código
-            # parte para a excessão que tenta achar um link, caso a última mensagem seja uma
-            # imagem.
+    async def listener(self):
+        """The `listener()` starts a loop that will get the last message and return the message and the author to the respective functions: `get_message()` and `get_message_author`"""
+        message_filter = ""
 
-        except NoSuchElementException:
-            try:
-                stickers = self.driver.find_elements_by_class_name(self.sticker_class)
-                ultimo_sticker = len(stickers) - 1
-                mensagem = stickers[ultimo_sticker].get_attribute("src")
-            except:
-                raise Exception("Deu errado")
+        while True:
+            self.driver.find_element_by_xpath("//span[@title='"+ self.contact +"']").click()
+            await asyncio.sleep(0.1)
+            try: # Try find text
+                chat = self.driver.find_elements_by_class_name(self.chat_class)
+                ultimo_chat = len(chat) - 1
+                self.message = chat[ultimo_chat].find_element_by_css_selector('span.selectable-text').text
+
+            except NoSuchElementException:
+                try: # Try find stickers
+                    stickers = self.driver.find_elements_by_class_name(self.sticker_class)
+                    ultimo_sticker = len(stickers) - 1
+                    self.message = stickers[ultimo_sticker].get_attribute("src")
+                except:
+                    raise Exception("Non-regonizable object.")
+                else: # If finds one, set them on self.message and writes the author on self.name
+                    if message_filter != self.message:
+                        nomes = stickers[ultimo_sticker].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
+                        ultimo_nome = len(nomes) - 1
+                        self.name = nomes[ultimo_nome].get_attribute("aria-label")
+                        sticker = Sticker(self.message)
+                        await asyncio.sleep(2)
+                        sticker.get_sticker(1)
+                        print(self.get_message_author() + ":", self.get_message())
+                        message_filter = self.get_message()
+                    else:
+                        continue
+
             else:
-                nomes = stickers[ultimo_sticker].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
-                ultimo_nome = len(nomes) - 1
-                nome = nomes[ultimo_nome].get_attribute("aria-label")
-                sticker = Sticker(mensagem)
-                sticker.get_sticker(1)
-                return nome, mensagem
-                
-                # por fim, retorna os valores encontrados, no caso mensagem e nome do usuário.
-        else:
-            nomes = chat[ultimo_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
-            ultimo_nome = len(nomes) - 1
-            nome = nomes[ultimo_nome].get_attribute("aria-label")
-            return nome, mensagem
+                if message_filter != self.message: #if finds one text, do the same
+                    nomes = chat[ultimo_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
+                    ultimo_nome = len(nomes) - 1
+                    self.name = nomes[ultimo_nome].get_attribute("aria-label")
+                    print(self.get_message_author() + ":", self.get_message())
+                    message_filter = self.get_message()
+                    try:
+                        functions = self._listeners["on_message"]
+                    except KeyError():
+                        continue
+                    else:
+                        for function in functions:
+                            self.event_loop.create_task(function())
+                else:
+                    continue
 
-    def send_message(self, mensagem):
-        """Usa as teclas para enviar uma mensagem. (OBS.: A mensagem é enviada inteira.)"""
+    async def send_message(self, message): # send a message
+        """Will send a message to contact previous selected."""
         input_box = self.driver.find_element_by_class_name(self.input_class)
-        time.sleep(1)
+        await asyncio.sleep(1)
         input_box.click()
-        raw_mensagem = mensagem.replace(" ", " _ ")
-        raw_mensagem = raw_mensagem.replace("\n", " // ")
-
-        # Formata a mensagem para que quando enviada, ela não envie comandos como ENTER
-        # para enviar a mensagem direto e não quebrar a linha, que talvez era o que precisava.
-        # Será alterado para um sistema de copiar e colar futuramente.
-
-        for palavra in raw_mensagem.split(" "):
-            if palavra == "//":
-                input_box.send_keys(Keys.SHIFT + Keys.ENTER)
-            elif palavra == "_":
-                input_box.send_keys(" ")
-            else:
-                input_box.send_keys(palavra)
+        pyperclip.copy(message)
+        input_box.send_keys(Keys.CONTROL + "v")
         button = self.driver.find_element_by_xpath("//span[@data-icon='send']")
         time.sleep(0.05)
         button.click()
+
+    def event(self, type): # the decorator `event()` will wrap the command used to be executed on listener
+        """A decorator to convert functions to executable commands by chat."""
+        def decorator(f):
+            self._listeners[type].append(f)
+            print(self._listeners)
+            return f
+        return decorator
+
+    def get_message_author(self): # Returns the message's author
+        """Return the last message's author.
+        
+        OBS: This function needs the Listener's execution."""
+        return str(self.name).replace(":", "")
+
+    def get_message(self): # Returns the message
+        """Return the last message send to chat.
+        
+        OBS: This function needs the Listener's execution."""
+        return str(self.message)
