@@ -1,2 +1,3 @@
 selenium
 pyperclip
+emoji
