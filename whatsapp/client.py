@@ -21,10 +21,10 @@ class Client():
         chrome_options.add_argument("--user-data-dir=chrome-data")
         self.driver = webdriver.Chrome("./Selenium/chromedriver.exe", options=chrome_options)
 
-        self.chat_class = "_2hqOq"
-        self.sticker_class = "_11S5R"
-        self.qrcode_class = "_2nIZM"
-        self.input_class = '_3uMse'
+        self.CHAT = "_2hqOq"
+        self.STICKER = "_11S5R"
+        self.QRCODE = "_2nIZM"
+        self.INPUTBOX = '_3uMse'
 
         self._listeners = {}
         self._listeners["on_message"] = []
@@ -40,12 +40,11 @@ class Client():
                 pass
         while True:
             try:
-                self.driver.find_element_by_class_name(self.qrcode_class)
+                self.driver.find_element_by_class_name(self.QRCODE)
             except:
                 break
         time.sleep(5)
         self.event_loop = asyncio.get_event_loop()
-        self._listeners["on_ready"]()
         self.event_loop.run_until_complete(self.listener())
 
     def select_contact(self, contact):
@@ -53,18 +52,23 @@ class Client():
 
     async def listener(self):
         """The `listener()` starts a loop that will get the last message and return the message and the author to the respective functions: `get_message()` and `get_message_author`"""
+        
+        await asyncio.sleep(5)
         message_filter = ""
+        await self.get_user_info()
+        self._listeners["on_ready"]()
+
         while True:
             self.driver.find_element_by_xpath("//span[@title='"+ self.contact +"']").click()
             await asyncio.sleep(0.5)
             try: # Try find text
-                chat = self.driver.find_elements_by_class_name(self.chat_class)
+                chat = self.driver.find_elements_by_class_name(self.CHAT)
                 ultimo_chat = len(chat) - 1
                 self.message = chat[ultimo_chat].find_element_by_css_selector('span.selectable-text').text
 
             except NoSuchElementException:
                 try: # Try find stickers
-                    stickers = self.driver.find_elements_by_class_name(self.sticker_class)
+                    stickers = self.driver.find_elements_by_class_name(self.STICKER)
                     ultimo_sticker = len(stickers) - 1
                     self.message = stickers[ultimo_sticker].get_attribute("src")
                 except:
@@ -103,7 +107,7 @@ class Client():
 
     async def send_message(self, message): # send a message
         """Will send a message to contact previous selected."""
-        input_box = self.driver.find_element_by_class_name(self.input_class)
+        input_box = self.driver.find_element_by_class_name(self.INPUTBOX)
         await asyncio.sleep(1)
         input_box.click()
         message = emoji.emojize(message, True)
@@ -141,6 +145,20 @@ class Client():
         requests.get("https://www.whatsapp.com")
         end = time.time()
         return end - start
+
+    async def get_user_info(self):
+
+        USER_PROFILE = '_1BjNO'
+        USER_SETTINGS = '_3FRCZ'
+        self.driver.find_element_by_class_name(USER_PROFILE).click()
+        await asyncio.sleep(1)
+        user_sets = self.driver.find_elements_by_class_name(USER_SETTINGS)
+        print(user_sets)
+
+        self.username = user_sets[0].text
+        self.user_message = user_sets[1].text
+
+        self.driver.find_element_by_xpath("//span[@data-icon='back']").click()
 
     def stop(self):
         self.driver.quit()
