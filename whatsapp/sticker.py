@@ -1,4 +1,4 @@
-from . import client
+import whatsapp.client as client
 
 class Sticker(object):
     def __init__(self, link):
@@ -7,4 +7,4 @@ class Sticker(object):
 
     def get_sticker(self, id):
         with open('sticker-{}.png'.format(str(id)), 'wb') as file:
-            file.write(client.Client().driver.find_element_by_class_name(self.class_name).screenshot_as_png)
+            file.write(client.Client().driver.find_element_by_class_name(self.class_name).screenshot_as_png())
