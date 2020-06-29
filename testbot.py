@@ -1,13 +1,22 @@
 import whatsapp 
 import asyncio
+import emoji
 
-bot = whatsapp.Client()
-bot.select_contact("Teste Bot")
+client = whatsapp.Client()
+client.select_contact("Teste Bot")
 
-@bot.event("on_message")
-async def func():
-    if bot.get_message() == "?teste":
-        message = "This is a test!"
-        await bot.send_message(message)
+@client.event()
+def on_ready():
+    print("logged!")
 
-bot.run()
+@client.event("on_message")
+async def pingtest():
+    if client.get_message() == "?ping":
+        await client.send_message("Pong! :ping_pong: latência: " + str(round(client.latency(), 2)) + "ms!")
+
+@client.event("on_message")
+async def stop_client():
+    if client.get_message() == "?stop" and client.get_message_author() == "Você":
+        client.stop()
+
+client.run(True, perma_connection=True)
