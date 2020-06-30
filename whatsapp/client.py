@@ -22,6 +22,8 @@ class Client():
         self.driver = webdriver.Chrome("./Selenium/chromedriver.exe", options=chrome_options)
 
         self.CHAT = "_2hqOq"
+        self.CHAT_IN = "message-in"
+        self.CHAT_OUT = "message-out"
         self.STICKER = "_11S5R"
         self.QRCODE = "_2nIZM"
         self.INPUTBOX = '_3uMse'
@@ -43,12 +45,26 @@ class Client():
                 self.driver.find_element_by_class_name(self.QRCODE)
             except:
                 break
-        time.sleep(5)
+
+        while True:
+            try:
+                self.driver.find_element_by_class_name("startup")
+            except:
+                break
+        time.sleep(2)
         self.event_loop = asyncio.get_event_loop()
         self.event_loop.run_until_complete(self.listener())
 
     def select_contact(self, contact):
-        self.contact = contact
+        if type(contact) == tuple:
+            self.contact, contact_type = contact
+            if contact_type == "group":
+                self.has_group = True
+            elif contact_type == "user":
+                pass
+        elif type(contact) == list:
+            for contact_tuple in contact:
+                pass
 
     async def listener(self):
         """The `listener()` starts a loop that will get the last message and return the message and the author to the respective functions: `get_message()` and `get_message_author`"""
@@ -75,33 +91,22 @@ class Client():
                     raise Exception("Non-regonizable object.")
                 else: # If finds one, set them on self.message and writes the author on self.name
                     if message_filter != self.message:
-                        nomes = stickers[ultimo_sticker].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
-                        ultimo_nome = len(nomes) - 1
-                        self.name = nomes[ultimo_nome].get_attribute("aria-label")
+                        self._listener_get_name(stickers, ultimo_sticker) 
                         sticker = Sticker(self.message)
                         await asyncio.sleep(2)
-                        sticker.get_sticker(1)
                         if self.message_console:
                             print(self.get_message_author() + ":", self.get_message())
                         message_filter = self.get_message()
+                        self.function_exec()
                     else:
                         continue
 
             else:
                 if message_filter != self.message: #if finds one text, do the same
-                    nomes = chat[ultimo_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
-                    ultimo_nome = len(nomes) - 1
-                    self.name = nomes[ultimo_nome].get_attribute("aria-label")
+                    self._listener_get_name(chat, ultimo_chat) 
                     if self.message_console:
                         print(self.get_message_author() + ":", self.get_message())
                     message_filter = self.get_message()
-                    try:
-                        functions = self._listeners["on_message"]
-                    except KeyError():
-                        continue
-                    else:
-                        for function in functions:
-                            self.event_loop.create_task(function())
                 else:
                     continue
 
@@ -153,7 +158,6 @@ class Client():
         self.driver.find_element_by_class_name(USER_PROFILE).click()
         await asyncio.sleep(1)
         user_sets = self.driver.find_elements_by_class_name(USER_SETTINGS)
-        print(user_sets)
 
         self.username = user_sets[0].text
         self.user_message = user_sets[1].text
@@ -162,3 +166,28 @@ class Client():
 
     def stop(self):
         self.driver.quit()
+        self.event_loop.close()
+        self.event_loop.stop()
+    
+    def _listener_get_name(self, chat, last_chat):
+        if self.has_group:
+                classes = "FMlAw FdF4z _3Whw5"
+                chat_in = self.driver.find_elements_by_class_name(self.CHAT_IN)
+                last_chat_in = len(chat_in) - 1
+                if last_chat_in == last_chat:
+                    nomes = chat_in[last_chat].find_elements_by_xpath("//span[contains(@class, '"+ classes +"')]")
+                    ultimo_nome = len(nomes) - 1
+                    self.name = nomes[ultimo_nome].text
+                else:
+                    nomes = chat[last_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
+                    ultimo_nome = len(nomes) - 1
+                    self.name = nomes[ultimo_nome].get_attribute("aria-label")
+        else:
+            nomes = chat[last_chat].find_elements_by_xpath("//span[not(@data-icon)][@aria-label]")
+            ultimo_nome = len(nomes) - 1
+            self.name = nomes[ultimo_nome].get_attribute("aria-label")
+
+    def function_exec(self):
+        functions = self._listeners["on_message"]
+        for function in functions:
+            self.event_loop.create_task(function())

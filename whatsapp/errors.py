@@ -1,0 +1,2 @@
+class whatsappException(Exception):
+    pass
