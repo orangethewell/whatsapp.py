@@ -127,3 +127,6 @@ dmypy.json
 # Chrome data
 /chrome-data
 .vscode/
+poems/poem1.txt
+poems/poem2.txt
+poems/poem3.txt

@@ -1,2 +1,2 @@
 from .client import Client
-from .sticker import Sticker
+from .contact import Contact, Group
