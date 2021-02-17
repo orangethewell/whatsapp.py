@@ -4,7 +4,10 @@ import pyperclip
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions
 
 from selenium.common.exceptions import NoSuchElementException
 
@@ -28,7 +31,13 @@ class Client():
         """Will open the Whatsapp Web page on Selenium and run the main loop."""
         self.driver.get("https://web.whatsapp.com/")
         if perma_connection == False:
-            self.driver.find_element_by_xpath("//input[@name='rememberMe']").click()
+            rememberme_button = WebDriverWait(self.driver, 10).until(
+                expected_conditions.presence_of_element_located((
+                    By.XPATH, 
+                    "//input[@name='rememberMe']"
+                ))
+            )
+            rememberme_button.click()
         while True:
             try:
                 self.driver.find_element_by_class_name(self.qrcode_class)
